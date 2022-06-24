@@ -1,35 +1,163 @@
 <p align="center">
-  <img alt="logo" src="https://user-images.githubusercontent.com/3325447/162053538-b497fc85-11d8-4fb2-b43e-11db2fd0829a.png" />
+  <img alt="Infra" src="https://user-images.githubusercontent.com/251292/176219932-dd8f84ae-5ad4-44e5-8865-dedb13f3c32b.svg" />
 </p>
 
-# Infra
+[![build](https://github.com/infrahq/infra/actions/workflows/release.yml/badge.svg)](https://github.com/infrahq/infra/releases/latest)
+[![twitter](https://img.shields.io/twitter/follow/infrahq.svg?style=social&label=Follow)](https://twitter.com/infrahq)
 
-Infra enables you to **discover and access** infrastructure (e.g. Kubernetes, databases). We help you connect an identity provider such as Okta or Azure active directory, and map users/groups with the permissions you set to your infrastructure.
+Secure, lightweight and high-performance proxy for accessing infrastructure and data
 
-If you don't have an identity provider, Infra supports local users for you to get started before connecting an identity provider.
+### Features
 
-## Features
+- **User** and **group** access control with pluggable authentication & authorization
+- **Connectors** for different infrastructure & data services
+- **Audit** logs for compliance & visibility
+- CLI for users to **discover and generate credentials** on the fly
 
-* Single-command to discover & access all your infrastructure (as an example, for Kubernetes, Infra automatically creates and syncs your kubeconfig locally after `infra login` and gets out of your way so you can use your favorite tools to access it)
-* No more out-of-sync user configurations no matter where your clusters are hosted
-* Support for native RBAC (e.g. support for default Kubernetes cluster roles or mapping to your own existing cluster roles)
-* Onboard and offboard users via an identity provider (e.g. Okta)
-* Workflow for dynamically requesting & granting access to users (coming soon)
-* Audit logs for who did what, when (coming soon)
+### Connectors
 
-<p align="center">
-  <img alt="product screenshot" src="https://user-images.githubusercontent.com/3325447/162065853-0073e6f2-8094-42f4-b88b-1bf03b2264e0.png"  />
-</p>
+| Connector          | Status        |
+| ------------------ | ------------- |
+| Kubernetes         | ✅ Stable     |
+| AWS                | _Coming soon_ |
+| Container Registry | _Coming soon_ |
+| Postgres           | _Coming soon_ |
+| Kafka              | _Coming soon_ |
+| MySQL              | _Coming soon_ |
+| MongoDB            | _Coming soon_ |
+| SSH                | _Coming soon_ |
+| RDP                | _Coming soon_ |
+| Snowflake          | _Coming soon_ |
 
-## Get Started
+### Quickstart (Kubernetes)
 
-* [Quickstart](https://infrahq.com/docs/getting-started/quickstart)
+#### Install Infra CLI
 
-## Documentation
-* [What is Infra?](https://infrahq.com/docs/getting-started/what-is-infra)
-* [Architecture](https://infrahq.com/docs/reference/architecture)
-* [Security](https://infrahq.com/docs/reference/security)
+```
+brew install infrahq/tap/infra
+```
+
+#### Deploy to Kubernetes
+
+Create a configuration file `infra.yaml`:
+
+```yaml
+access:
+  - user: jeff@acme.com
+    role: edit
+    namespace: default
+```
+
+Next, deploy the proxy to Kubernetes via `infra deploy`:
+
+```bash
+infra deploy --kubernetes -f infra.yaml
+```
+
+#### Create an account and generate credentials
+
+Sign up for an account and access the cluster:
+
+```
+$ infra signup
+  Email: jeff@acme.com
+  Please verify your email... ✓ verified.
+  Choose a team name: acme
+
+  Your credentials have been updated:
+    - example-cluster (example-cluster.acme.infrahq.dev)
+```
+
+Now access the cluster and verify you have `edit` access:
+
+```
+$ kubectl run --image=nginx
+```
+
+#### View access logs
+
+```
+$ infra logs
+
+DESTINATION        USER              ACTION                         TIME           DURATION
+example-cluster    jeff@acme.com     kubectl run --image nginx      just now       204ms
+```
+
+### Example configuration
+
+```yaml
+destinations:
+  - name: cluster
+    kind: kubernetes
+    url: https://example-cluster.acme.infrahq.dev
+    serviceaccount: env:KUBERNETES_TOKEN
+
+  # container registry
+  - name: registry
+    kind: registry
+    host: index.docker.io
+    token: env:REGISTRY_TOKEN
+
+  # database
+  - name: db
+    kind: postgres
+    host: postgres.acme.internal
+    port: 5432
+    user: postgres
+    password: env:POSTGRES_PASSWORD
+
+  # aws
+  - name: aws
+    kind: aws
+    region: us-east-1
+    accessKeyId: env:AWS_ACCESS_KEY_ID
+    secretAccessKey: env:AWS_SECRET_ACCESS_KEY
+
+authentication:
+  # additional keys to verify credentials against
+  - jwks: https://acme.com/jwks.json
+
+# static authorization
+authorization:
+  - user: admin@acme.com
+    role: edit
+    namespace: default
+
+  - group: DatabaseAdmins
+    destination: db
+    role: view
+
+  - user: Developers
+    destination: registry
+    role: view
+
+audit:
+  - format: json
+    fields: [user, action, time, duration]
+
+# Advanced: specify your own self-hosted server
+# on by default, but configurable
+server:
+  # custom infra servers
+  url: https://infrahq.com
+
+  # authenticate against the server
+  authenticate: true
+
+  # external authorization
+  authorize: true
+
+  # send audit logs
+  audit: true
+```
+
+### Documentation
+
+- [Connect an identity provider](https://infrahq.com/configuration/identity-provider)
+- [Invite your team](https://infrahq.com/docs/configuration/invite-team)
+- [Security](https://infrahq.com/docs/reference/security)
 
 ## Community
-* [Community Forum](https://github.com/infrahq/infra/discussions) Best for: help with building, discussion about infrastructure access best practices.
-* [GitHub Issues](https://github.com/infrahq/infra/issues) Best for: bugs and errors you encounter using Infra.
+
+- [Community Forum](https://github.com/infrahq/infra/discussions) Best for: help with building, discussion about infrastructure access best practices.
+- [GitHub Issues](https://github.com/infrahq/infra/issues) Best for: bugs and errors you encounter using Infra.

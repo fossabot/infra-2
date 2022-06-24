@@ -37,6 +37,21 @@ import (
 	"github.com/infrahq/infra/metrics"
 )
 
+type Provider struct {
+	Name         string `validate:"required"`
+	Kind         string
+	URL          string `validate:"required"`
+	ClientID     string `validate:"required"`
+	ClientSecret string `validate:"required"`
+}
+
+type Grant struct {
+	User      string `validate:"excluded_with=Group"`
+	Group     string `validate:"excluded_with=User"`
+	Namespace string `validate:"required"`
+	Role      string
+}
+
 type Options struct {
 	Server        string
 	Name          string
@@ -44,6 +59,9 @@ type Options struct {
 	CACert        string
 	CAKey         string
 	SkipTLSVerify bool
+
+	Providers []Provider `validate:"dive"`
+	Grants    []Grant    `validate:"dive"`
 }
 
 type jwkCache struct {
