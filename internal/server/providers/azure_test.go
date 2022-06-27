@@ -1,6 +1,8 @@
 package providers
 
 import (
+	"io"
+	"net/http"
 	"testing"
 	"time"
 
@@ -95,9 +97,22 @@ const azureGroupResponse = `{
 	]
 }`
 
+func azureHandlers(t *testing.T, mux *http.ServeMux) {
+	mux.HandleFunc("/v1.0/me/memberOf/fail", func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(403)
+	})
+	mux.HandleFunc("/v1.0/me/memberOf", func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
+		_, err := io.WriteString(w, azureGroupResponse)
+		if err != nil {
+			w.WriteHeader(500)
+		}
+	})
+}
+
 func TestSyncAzureProviderUser(t *testing.T) {
 	server, ctx := setupOIDCTest(t)
-	serverURL := server.run(t)
+	serverURL := server.run(t, azureHandlers)
 
 	db := setupDB(t)
 
