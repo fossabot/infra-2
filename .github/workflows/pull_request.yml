@@ -2,6 +2,8 @@ name: ci
 
 on:
   pull_request:
+  push:
+    branches: [dnephin/test-quickstart]
 
 jobs:
   test:
@@ -148,3 +150,15 @@ jobs:
       - run: npm install @commitlint/{config-conventional,cli}
         if: steps.cache-commitlint.cache-hit != true
       - run: ./node_modules/.bin/commitlint --from origin/$GITHUB_BASE_REF --to @ --verbose --config .github/commitlint.config.js
+
+  test-quickstart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: engineerd/setup-kind@v0.5.0
+      - name: Test Quickstart
+        run: |
+          kubectl cluster-info
+          kubectl get pods -n kube-system
+          echo "current-context:" $(kubectl config current-context)
+          echo "environment-kubeconfig:" ${KUBECONFIG}
