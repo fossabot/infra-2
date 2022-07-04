@@ -89,18 +89,6 @@ func Run(ctx context.Context, options Options) error {
 		logging.Errorf("server: %s", err)
 	}
 
-	// server is localhost which should never be the case. try to infer the actual host
-	if strings.HasPrefix(u.Host, "localhost") {
-		server, err := k8s.Service("server")
-		if err != nil {
-			logging.Warnf("no cluster-local infra server found for %q. check connector configurations", u.Host)
-		} else {
-			host := fmt.Sprintf("%s.%s", server.ObjectMeta.Name, server.ObjectMeta.Namespace)
-			logging.Debugf("using cluster-local infra server at %q instead of %q", host, u.Host)
-			u.Host = host
-		}
-	}
-
 	u.Scheme = "https"
 
 	destination := &api.Destination{
@@ -204,7 +192,6 @@ func Run(ctx context.Context, options Options) error {
 }
 
 func syncWithServer(k8s *kubernetes.Kubernetes, client *api.Client, destination *api.Destination, certCache *CertCache, caCertPEM []byte) func(context.Context) {
-
 	return func(context.Context) {
 		host, port, err := k8s.Endpoint()
 		if err != nil {

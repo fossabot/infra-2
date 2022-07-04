@@ -66,7 +66,12 @@ export default function DestinationsAdd() {
     setSubmitted(true)
   }
 
-  const server = window.location.host
+  let server = window.location.host
+  if (server === 'localhost') {
+    // this is a local deployment, resolve the server by its default deployment name
+    server = 'infra-server'
+  }
+
   let command = `helm install infra-connector infrahq/infra \\
     --set connector.config.accessKey=${accessKey} \\
     --set connector.config.server=${server} \\

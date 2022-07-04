@@ -61,7 +61,7 @@ Next, use this access key to connect your first cluster via `helm`:
 ```
 helm upgrade --install infra-connector infrahq/infra \
   --set connector.config.name=example-cluster \
-  --set connector.config.server=localhost \
+  --set connector.config.server=infra-server \
   --set connector.config.accessKey=<CONNECTOR_KEY> \
   --set connector.config.skipTLSVerify=true
 ```
