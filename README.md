@@ -31,10 +31,10 @@ Secure, lightweight and high-performance proxy for accessing infrastructure and 
 
 ### Quickstart (Kubernetes)
 
-#### Install Infra CLI
+#### Install Infra
 
 ```
-brew install infrahq/tap/infra
+helm install infra infrahq/infra
 ```
 
 #### Deploy to Kubernetes
