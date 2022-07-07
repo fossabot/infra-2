@@ -1,15 +1,14 @@
 package cmd
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/mail"
 	"strings"
 
 	survey "github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
 
 	"github.com/infrahq/infra/api"
 	"github.com/infrahq/infra/internal/generate"
@@ -122,14 +121,6 @@ func newUsersListCmd(cli *CLI) *cobra.Command {
 				return err
 			}
 
-			type row struct {
-				Name       string `header:"Name"`
-				LastSeenAt string `header:"Last Seen"`
-				Providers  string `header:"Provided By"`
-			}
-
-			var rows []row
-
 			logging.Debugf("call server: list users")
 			users, err := client.ListUsers(api.ListUsersRequest{})
 			if err != nil {
@@ -142,41 +133,39 @@ func newUsersListCmd(cli *CLI) *cobra.Command {
 				return err
 			}
 
-			switch format {
-			case "json":
-				jsonOutput, err := json.Marshal(users.Items)
-				if err != nil {
-					return err
-				}
-				cli.Output(string(jsonOutput))
-			case "yaml":
-				yamlOutput, err := yaml.Marshal(users.Items)
-				if err != nil {
-					return err
-				}
-				cli.Output(string(yamlOutput))
-			default:
-				for _, user := range users.Items {
-					rows = append(rows, row{
-						Name:       user.Name,
-						LastSeenAt: HumanTime(user.LastSeenAt.Time(), "never"),
-						Providers:  strings.Join(user.ProviderNames, ", "),
-					})
-				}
-
-				if len(rows) > 0 {
-					printTable(rows, cli.Stdout)
-				} else {
-					cli.Output("No users found")
-				}
-			}
-
-			return nil
+			formatter := newListFormatter(cli.Stdout, format, listUsersTable(users.Items))
+			return formatter.Format(users.Items)
 		},
 	}
 
 	addFormatFlag(cmd.Flags(), &format)
 	return cmd
+}
+
+func listUsersTable(users []api.User) func(out io.Writer) {
+	return func(out io.Writer) {
+		type row struct {
+			Name       string `header:"Name"`
+			LastSeenAt string `header:"Last Seen"`
+			Providers  string `header:"Provided By"`
+		}
+
+		var rows []row
+
+		for _, user := range users {
+			rows = append(rows, row{
+				Name:       user.Name,
+				LastSeenAt: HumanTime(user.LastSeenAt.Time(), "never"),
+				Providers:  strings.Join(user.ProviderNames, ", "),
+			})
+		}
+
+		if len(rows) == 0 {
+			fmt.Fprintln(out, "No users found")
+			return
+		}
+		printTable(rows, out)
+	}
 }
 
 func newUsersRemoveCmd(cli *CLI) *cobra.Command {

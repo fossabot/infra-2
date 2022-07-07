@@ -1,10 +1,14 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"strings"
 	"time"
+
+	"sigs.k8s.io/yaml" // used to get the json tags when encoding
 )
 
 // HumanDuration returns a human-readable approximation of a duration
@@ -113,4 +117,35 @@ func ExactDuration(d time.Duration) string {
 	}
 
 	return strings.TrimSpace(readableDur.String())
+}
+
+type listFormatter struct {
+	format      string
+	formatTable func(io.Writer)
+	out         io.Writer
+}
+
+func newListFormatter(out io.Writer, format string, table func(io.Writer)) listFormatter {
+	return listFormatter{
+		out:         out,
+		format:      format,
+		formatTable: table,
+	}
+}
+
+func (l listFormatter) Format(data interface{}) error {
+	switch l.format {
+	case "json":
+		return json.NewEncoder(l.out).Encode(data)
+	case "yaml":
+		raw, err := yaml.Marshal(data)
+		if err != nil {
+			return err
+		}
+		_, err = l.out.Write(raw)
+		return err
+	default:
+		l.formatTable(l.out)
+		return nil
+	}
 }
