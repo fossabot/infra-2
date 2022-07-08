@@ -11,12 +11,40 @@ import (
 // Validate that the values in the Request struct are valid according to the
 // validation rules defined on the struct.
 // If validation fails the error will be of type Error.
+//
+// Validate automatically traverses the fields on the struct. If any of the
+// fields are of a type that implement Request, the validation rules of that
+// field will be used as well.
 func Validate(req Request) error {
 	err := make(Error)
 
 	for _, rule := range req.ValidationRules() {
 		if failure := rule.Validate(); failure != nil {
 			err[failure.Name] = append(err[failure.Name], failure.Problems...)
+		}
+	}
+
+	// TODO: recurse into more than first level
+	v := reflect.Indirect(reflect.ValueOf(req))
+	if v.Kind() == reflect.Struct {
+		for i := 0; i < v.NumField(); i++ {
+			f := v.Field(i)
+			if v.Type().Field(i).Anonymous {
+				// TODO: embedded struct are complicated
+				continue
+			}
+			name := fieldName(v.Type().Field(i))
+			if r, ok := f.Interface().(Request); ok {
+				for _, rule := range r.ValidationRules() {
+					if failure := rule.Validate(); failure != nil {
+						n := name
+						if failure.Name != "" {
+							n = name + "." + failure.Name
+						}
+						err[n] = append(err[n], failure.Problems...)
+					}
+				}
+			}
 		}
 	}
 
@@ -172,4 +200,26 @@ func schemaForProperty(parent *openapi3.Schema, prop string) *openapi3.Schema {
 		parent.Properties[prop] = &openapi3.SchemaRef{Value: &openapi3.Schema{}}
 	}
 	return parent.Properties[prop].Value
+}
+
+func fieldName(f reflect.StructField) string {
+	if name, ok := f.Tag.Lookup("form"); ok {
+		return name
+	}
+
+	if name, ok := f.Tag.Lookup("uri"); ok {
+		return name
+	}
+
+	// lookup json tag last, as a field may have a uri or form name, but a
+	// json name of "-".
+	if name, ok := f.Tag.Lookup("json"); ok {
+		name = strings.Split(name, ",")[0]
+		if name == "-" {
+			return ""
+		}
+		return name
+	}
+
+	return ""
 }
