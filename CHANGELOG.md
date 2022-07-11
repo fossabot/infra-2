@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.13.7](https://github.com/infrahq/infra/compare/v0.13.6...v0.13.7) (2022-07-11)
+
+
+### Features
+
+* report version in destinations API ([9963d90](https://github.com/infrahq/infra/commit/9963d908d71a37493acef1ef223f4f108738b136))
+* update prom resource metrics with labels ([10f52b8](https://github.com/infrahq/infra/commit/10f52b8331929118f13f4732e57a1617cbe4b031))
+
+
+### Bug Fixes
+
+* **docs:** remove bash syntax highlighting ([#2457](https://github.com/infrahq/infra/issues/2457)) ([7b0dde7](https://github.com/infrahq/infra/commit/7b0dde787b69c1ac5b37cd414623575c57476790))
+* notifies user when adding duplicate grant ([#2360](https://github.com/infrahq/infra/issues/2360)) ([f70a1fe](https://github.com/infrahq/infra/commit/f70a1fe5cefc4a6ff58d75617b6cd94dfb56fab6))
+
 ## [0.13.6](https://github.com/infrahq/infra/compare/v0.13.5...v0.13.6) (2022-07-07)
 
 
